@@ -48,7 +48,9 @@ class Server():
                 
                 # Test group methods
                 print("Number of members: ", self.default_group.get_num_members())
-                print(self.default_group.get_all_messages())
+                all_messages = self.default_group.get_all_messages()
+                for message in all_messages:
+                    print(message)
                 print(self.default_group.get_last_two_messages())
                 
                 if not msg: # If the message is empty,
@@ -74,8 +76,10 @@ class Server():
         
     def start(self):
         try:
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # Allow the socket to be reused
             self.socket.bind(self.addr)
             self.socket.listen()
+            
             print(f"[LISTENING] Server is listening on {self.addr[0]}:{self.addr[1]}")
             while True:
                 client, address = self.socket.accept()

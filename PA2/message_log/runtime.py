@@ -32,8 +32,7 @@ class MessageLog():
         """
         This function will return all messages in the log in reverse order. (Newest first)
         """
-        reversed = self.messages.reverse()
-        return reversed
+        return list(reversed(self.messages))
     
     def get_all_users(self):
         """
@@ -41,16 +40,17 @@ class MessageLog():
         """
         return self.users
     
-    def get_last_two_messages(self):
+    def get_last_two_messages(self) -> List[Dict[str, str]]:
         """
         This function will return the last two messages in the log.
         """
+        all_messages = self.get_all_messages()
         try:
-            return self.messages[-2:]
+            return [all_messages[0], all_messages[1]]
         except IndexError:
             try:
-                return self.messages[-1:]
+                return [all_messages[0], ""]
             except IndexError:
-                return []
+                return ["", ""]
         
     

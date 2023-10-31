@@ -57,7 +57,7 @@ class Group:
         """
         return self._log.get_all_users()
     
-    def get_last_two_messages(self):
+    def get_last_two_messages(self) -> List[Dict[str, str]]:
         """
         This function will return the last two messages in the log.
         """
