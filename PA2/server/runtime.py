@@ -2,6 +2,7 @@ import socket
 import threading
 import logging
 import json
+from groups import Group
 from typing import Dict, Tuple, List
 
 class Server():
@@ -14,6 +15,7 @@ class Server():
         self._logger = logging.getLogger(__name__)
         self._format = "utf-8"
         self.lock = threading.Lock() # Use an instance lock for thread safety
+        self.default_group = Group("default", 0)
         
     def handle_client(self, client: socket.socket, address):
         """Will handle a client connection. This function will run in a separate thread.
@@ -31,12 +33,24 @@ class Server():
         initial_msg_string = json.dumps(initial_msg) # Convert the dictionary to a JSON string
         client.send(initial_msg_string.encode(encoding=self._format)) # Send the JSON string
         connected = True
+        msg = client.recv(1024).decode(self._format) # Receive 1024 bytes of data
+        received_json = json.loads(msg) # Convert the JSON string to a dictionary
+        user_name = received_json["name"]
+        self.default_group.join(user_name, (client, address))
         while connected:
             try:
                 msg = client.recv(1024).decode(self._format) # Receive 1024 bytes of data
                 received_json = json.loads(msg) # Convert the JSON string to a dictionary
-                user_name = received_json["name"] 
+                user_name = received_json["name"]
                 user_message = received_json["message"]
+                with self.lock:
+                    self.default_group.new_message(user_name, user_message)
+                
+                # Test group methods
+                print("Number of members: ", self.default_group.get_num_members())
+                print(self.default_group.get_all_messages())
+                print(self.default_group.get_last_two_messages())
+                
                 if not msg: # If the message is empty,
                     continue
                 if user_message == "disconnect": # If the user wants to disconnect,
