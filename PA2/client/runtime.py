@@ -88,7 +88,8 @@ class Client:
                     if msg == "":
                         continue
                 if msg == "disconnect":
-                    self.connected = False
+                    with self.lock:
+                        self.connected = False
                 self.send(msg)
 
         except Exception as e:
