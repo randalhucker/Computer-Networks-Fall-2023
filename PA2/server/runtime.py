@@ -17,6 +17,30 @@ class Server():
         self.lock = threading.Lock() # Use an instance lock for thread safety
         self.default_group = Group("default", 0)
         
+    def send_message(self, client: socket.socket, message: dict[str, str]):
+        """Sends a message to all connected clients.
+
+        Args:
+            client (socket.socket): The client socket.
+            message (str): The message to send.
+        """
+        
+        user_name = message['name'] # Get the user's name
+        user_message = message['message'] # Get the user's message
+        
+        with self.lock:
+            self.default_group.new_message(user_name, user_message) # Add the message to the log
+        
+        for c, (name, addr) in self.clients.items(): # Iterate through all connected clients
+            if c == client: # If the client is not the current client,
+                continue
+            json_data = { # Create a dictionary
+                "name": user_name,
+                "message": user_message
+            }
+            json_string = json.dumps(json_data) # Convert the dictionary to a JSON string
+            c.sendall(json_string.encode(encoding=self._format)) # Send the JSON string
+        
     def handle_client(self, client: socket.socket, address):
         """Will handle a client connection. This function will run in a separate thread.
 
@@ -36,37 +60,33 @@ class Server():
         msg = client.recv(1024).decode(self._format) # Receive 1024 bytes of data
         received_json = json.loads(msg) # Convert the JSON string to a dictionary
         user_name = received_json["name"]
-        self.default_group.join(user_name, (client, address))
+        with self.lock:
+            self.default_group.join(user_name, (client, address))
+        join_msg = {
+            "name" : "Server",
+            "message" : user_name + " has joined the chat."
+        }
+        self.send_message(client, join_msg) # Send the message to all connected clients
+            
         while connected:
             try:
-                msg = client.recv(1024).decode(self._format) # Receive 1024 bytes of data
-                received_json = json.loads(msg) # Convert the JSON string to a dictionary
-                user_name = received_json["name"]
-                user_message = received_json["message"]
-                with self.lock:
-                    self.default_group.new_message(user_name, user_message)
+                user_message_string = client.recv(1024).decode(self._format) # Receive 1024 bytes of data
                 
-                # Test group methods
-                print("Number of members: ", self.default_group.get_num_members())
-                all_messages = self.default_group.get_all_messages()
-                for message in all_messages:
-                    print(message)
-                print(self.default_group.get_last_two_messages())
+                user_message: dict[str, str] = json.loads(user_message_string) # Convert the JSON string to a dictionary
                 
-                if not msg: # If the message is empty,
-                    continue
-                if user_message == "disconnect": # If the user wants to disconnect,
-                    connected = False
-                    self.clients.pop(client)
-                    user_message = "[CLIENT DISCONNECTED] Client on address: " + str(address) + " disconnected."
-                for c, (name, addr) in self.clients.items(): # Iterate through all connected clients
-                    if c != client: # If the client is not the current client,
-                        json_data = { # Create a dictionary
-                            "name": user_name,
-                            "message": user_message
+                if not user_message['message']: # If the message is empty,
+                    continue # Skip the rest of the loop
+                
+                if user_message['message'] == "disconnect": # If the user wants to disconnect,
+                    with self.lock:
+                        connected = False
+                        self.clients.pop(client)
+                        user_message = {
+                            "name" : "CLIENT DISCONNECTED",
+                            "message" : "Client at address: " + str(address) + " disconnected."
                         }
-                        json_string = json.dumps(json_data) # Convert the dictionary to a JSON string
-                        c.sendall(json_string.encode(encoding=self._format)) # Send the JSON string
+                        self.default_group.leave(user_name)
+                self.send_message(client, user_message) # Send the message to all connected clients
             except Exception as e:
                 self._logger.error(f"Error handling client: {e}")
                 break

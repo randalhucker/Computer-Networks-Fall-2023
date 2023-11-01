@@ -44,6 +44,7 @@ class Group:
         This function will remove a user from the group.
         """
         self._num_members -= 1
+        self._remove_member(user)
     
     def get_all_messages(self):
         """
