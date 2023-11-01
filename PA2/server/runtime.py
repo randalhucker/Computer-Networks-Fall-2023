@@ -15,7 +15,16 @@ class Server():
         self._logger = logging.getLogger(__name__)
         self._format = "utf-8"
         self.lock = threading.Lock() # Use an instance lock for thread safety
-        self.default_group = Group("default", 0)
+        self.groups: Dict[str, Group] = {"default": Group("default")}
+        
+    def new_group(self, group_name: str):
+        """Adds a group to the server.
+
+        Args:
+            group_name (str): The name of the group.
+            group (Group): The group object.
+        """
+        self.groups[group_name] = Group(group_name)
         
     def send_message(self, client: socket.socket, message: dict[str, str]):
         """Sends a message to all connected clients.
@@ -29,7 +38,7 @@ class Server():
         user_message = message['message'] # Get the user's message
         
         with self.lock:
-            self.default_group.new_message(user_name, user_message) # Add the message to the log
+            self.groups['default'].new_message(user_name, user_message) # Add the message to the log
         
         for c, (name, addr) in self.clients.items(): # Iterate through all connected clients
             if c == client: # If the client is not the current client,
@@ -61,7 +70,7 @@ class Server():
         received_json = json.loads(msg) # Convert the JSON string to a dictionary
         user_name = received_json["name"]
         with self.lock:
-            self.default_group.join(user_name, (client, address))
+            self.groups['default'].join(user_name, (client, address))
         join_msg = {
             "name" : "Server",
             "message" : user_name + " has joined the chat."
@@ -85,7 +94,7 @@ class Server():
                             "name" : "CLIENT DISCONNECTED",
                             "message" : "Client at address: " + str(address) + " disconnected."
                         }
-                        self.default_group.leave(user_name)
+                        self.groups['default'].leave(user_name)
                 self.send_message(client, user_message) # Send the message to all connected clients
             except Exception as e:
                 self._logger.error(f"Error handling client: {e}")

@@ -3,10 +3,10 @@ import socket
 from typing import Tuple
 
 class Group:
-    def __init__(self, n, m):
+    def __init__(self, n: str):
         self.name = n
         self._log = MessageLog()
-        self._num_members = m
+        self._num_members = 0
         
     def new_message(self, user, message):
         """
