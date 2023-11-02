@@ -2,6 +2,7 @@ import socket
 import threading
 import logging
 import json
+from typing import List, Dict, Tuple
 
 
 class Client:
@@ -27,14 +28,16 @@ class Client:
         with self.lock:
             self.socket.sendall(response_string.encode(encoding=self._format)) # Send the JSON string
             
-    def recv(self) -> str:
+    def recv(self) -> List[Dict[str, str]]:
         """Receives a message from the server.
 
         Returns:
             str: The message received from the server. JSON formatted.
         """
         try:
-            return self.socket.recv(1024).decode(self._format) # Receive 1024 bytes of data
+            json_message_string = self.socket.recv(1024).decode(self._format) # Receive 1024 bytes of data
+            messages = self.parse_json_string(json_message_string) # Parse the JSON string
+            return messages
         except Exception as e:
             self._logger.error(f"Error receiving message: {e}")
             return ""
@@ -45,16 +48,17 @@ class Client:
         """
         while True:
             try:
-                received_msg = self.recv() # Receive a message from the server
+                received_msgs = self.recv() # Receive a message from the server
                 if not self.connected: # Only print messages if the client is connected
                     break
+                
                 with self.lock: # Use a lock to prevent multiple threads from printing at the same time
-                    if received_msg: # Only print if the message is not empty
-                        print("\r" + " " * 30, end="") # Clear the line
-                        received_json = json.loads(received_msg) # Convert the JSON string to a dictionary
-                        print(
-                            f"\r[{received_json['name']}] {received_json['message']}\n" # Print the message
-                        )
+                    for message in received_msgs:
+                        if message['message']: # Only print if the message is not empty
+                            print("\r" + " " * 30, end="") # Clear the line
+                            print(
+                                f"\r[{message['name']}] {message['message']}\n" # Print the message
+                            )
                     if self.name == "": # If the client has not set their name, ask them to do so
                         print("\rEnter name: ", end="") 
                     else: # Otherwise, ask them to enter a message
@@ -62,6 +66,30 @@ class Client:
             except Exception as e:
                 if self.connected:
                     self._logger.error(f"Error receiving message: {e}")
+                    
+    def parse_json_string(json_string: str) -> List[Dict[str, str]]:
+        # Initialize an empty list to store dictionaries
+        parsed_list = []
+
+        # Split the input string into individual JSON objects
+        json_objects = json_string.split("}{")
+        
+        # Handle cases where there are missing curly braces at the beginning or end
+        if len(json_objects) > 1:
+            json_objects[0] = json_objects[0] + "}"
+            json_objects[-1] = "{" + json_objects[-1]
+
+        # Iterate through the JSON objects and parse them
+        for obj in json_objects:
+            try:
+                # Load each JSON object into a dictionary
+                parsed_dict = json.loads(obj)
+                parsed_list.append(parsed_dict)
+            except json.JSONDecodeError:
+                # Handle any JSON decoding errors (invalid JSON)
+                print(f"Skipping invalid JSON object: {obj}")
+
+        return parsed_list
 
     def start(self):
         """Starts the client and connects to the server.

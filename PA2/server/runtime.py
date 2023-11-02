@@ -141,23 +141,48 @@ class Server():
             try:
                 user_message_string = client.recv(1024).decode(self._format) # Receive 1024 bytes of data
                 
-                user_message: dict[str, str] = json.loads(user_message_string) # Convert the JSON string to a dictionary
+                messages = self.parse_json_string(user_message_string) # Parse the JSON string
                 
-                if not user_message['message']: # If the message is empty,
-                    continue # Skip the rest of the loop
-                
-                if user_message['message'] == "disconnect": # If the user wants to disconnect,
-                    with self.lock:
-                        connected = False
-                        user_message = self.disconnect(client, address, user_message['name'])
-                
-                # TODO add a way to change group message from client
-                self.send_message(client, user_message, 'default') # Send the message to all connected clients
+                for user_message in messages:
+                    if not user_message['message']: # If the message is empty,
+                        continue # Skip the rest of the loop
+                    
+                    if user_message['message'] == "disconnect": # If the user wants to disconnect,
+                        with self.lock:
+                            connected = False
+                            user_message = self.disconnect(client, address, user_message['name'])
+                    
+                    # TODO add a way to change group message from client
+                    self.send_message(client, user_message, 'default') # Send the message to all connected clients
             except Exception as e:
                 self._logger.error(f"Error handling client: {e}")
         self._logger.info(f"[DISCONNECTION] {address} disconnected.")
         self._logger.info(f"[ACTIVE CONNECTIONS] {len(self.clients)}")
         client.close()
+        
+    def parse_json_string(self, json_string: str) -> List[Dict[str, str]]:
+        # Initialize an empty list to store dictionaries
+        parsed_list = []
+
+        # Split the input string into individual JSON objects
+        json_objects = json_string.split("}{")
+        
+        # Handle cases where there are missing curly braces at the beginning or end
+        if len(json_objects) > 1:
+            json_objects[0] = json_objects[0] + "}"
+            json_objects[-1] = "{" + json_objects[-1]
+
+        # Iterate through the JSON objects and parse them
+        for obj in json_objects:
+            try:
+                # Load each JSON object into a dictionary
+                parsed_dict = json.loads(obj)
+                parsed_list.append(parsed_dict)
+            except json.JSONDecodeError:
+                # Handle any JSON decoding errors (invalid JSON)
+                print(f"Skipping invalid JSON object: {obj}")
+
+        return parsed_list
         
     def start(self):
         try:
