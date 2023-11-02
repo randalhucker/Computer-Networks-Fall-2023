@@ -180,7 +180,7 @@ class Server():
                 parsed_list.append(parsed_dict)
             except json.JSONDecodeError:
                 # Handle any JSON decoding errors (invalid JSON)
-                print(f"Skipping invalid JSON object: {obj}")
+                self._logger.info(f"Skipping invalid JSON object: {obj}")
 
         return parsed_list
         
