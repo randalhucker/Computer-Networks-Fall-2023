@@ -9,14 +9,18 @@ class MessageLog():
     def __init__(self):
         self.messages: List[Dict[str, str]] = []
         self.users: Dict[str, Tuple[socket.socket, str]] = {}
+        self.blank_message = {
+            "name": "",
+            "message": ""
+        }
     
-    def add_message(self, user, message):
+    def add_message(self, message: Dict[str, str]):
         """
         This function will add a message to the log.
         """
-        self.messages.append({"name": user, "message": message})
+        self.messages.append(message)
         
-    def add_user(self, user, socket_info):
+    def add_user(self, user, socket_info: Tuple[socket.socket, str]):
         """
         This function will add a {User: Addr} to the log.
         """
@@ -40,17 +44,23 @@ class MessageLog():
         """
         return self.users
     
+    def is_user_in_log(self, user: str) -> bool:
+        """
+        This function will return True if the user is in the log.
+        """
+        return user in self.users
+    
     def get_last_two_messages(self) -> List[Dict[str, str]]:
         """
         This function will return the last two messages in the log.
         """
         all_messages = self.get_all_messages()
         try:
-            return [all_messages[0], all_messages[1]]
+            return [all_messages[1], all_messages[0]]
         except IndexError:
             try:
-                return [all_messages[0], ""]
+                return [self.blank_message, all_messages[0]]
             except IndexError:
-                return ["", ""]
+                return [self.blank_message, self.blank_message]
         
     
