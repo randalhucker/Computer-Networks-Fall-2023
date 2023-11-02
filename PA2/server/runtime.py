@@ -26,7 +26,7 @@ class Server():
         """
         self.groups[group_name] = Group(group_name)
         
-    def send_message(self, client: socket.socket, message: dict[str, str], group_name: str = 'default', is_join: bool = False):
+    def send_message(self, client: socket.socket, message: dict[str, str], group_name: str = 'default', to_caller: bool = False):
         """Sends a message to all connected clients.
 
         Args:
@@ -40,17 +40,19 @@ class Server():
         if not user_message:
             return  # Skip sending empty messages
 
-        if not is_join:
-            with self.lock:
-                self.groups[group_name].new_message(message)  # Add the message to the log
-            
         json_data = {
             "name": user_name,
-            "message": user_message
+            "message": user_message,
         }
+        
+        if not to_caller:
+            with self.lock:
+                self.groups[group_name].new_message(message)  # Add the message to the log
+                json_data['id'] = message['id'] # Add the message id to the JSON data
+
         json_string = json.dumps(json_data)  # Convert the dictionary to a JSON string
         
-        if not is_join:
+        if not to_caller:
             for c in self.clients.keys():
                 if c != client:
                     self._send_message(c, json_string)  # Send the JSON string to other clients
@@ -71,7 +73,7 @@ class Server():
         with self.lock:
             last_messages = self.groups[group_name].get_last_two_messages()
             for message in last_messages:
-                self.send_message(client, message, group_name, is_join=True)
+                self.send_message(client, message, group_name, to_caller=True)
                 
     def join_group(self, client: socket.socket, group_name: str, user_name: str):
         """Adds a client to a group.
@@ -81,10 +83,10 @@ class Server():
             group_name (str): The name of the group.
             user_name (str): The name of the user.
         """
+        _, address = self.clients[client]
         with self.lock:
-            _, address = self.clients[client]
             self.groups[group_name].join(user_name, (client, address))
-            self.send_last_two_messages(client, group_name)
+        self.send_last_two_messages(client, group_name)
     
     def get_all_groups(self) -> List[str]:
         """Returns a list of all groups.
@@ -104,6 +106,19 @@ class Server():
             if group.is_user_in_group(name): # If the user is in the group,
                 group.leave(name) # Remove the user from the group
         return user_message
+    
+    def get_message_by_id(self, id: int, group_name: str) -> dict[str, str]:
+        """Returns a message by its id.
+
+        Args:
+            id (int): The id of the message.
+            group_name (str): The name of the group.
+
+        Returns:
+            dict[str, str]: The message.
+        """
+        with self.lock:
+            return self.groups[group_name].get_message_by_id(id)
         
     def handle_client(self, client: socket.socket, address):
         """Will handle a client connection. This function will run in a separate thread.
@@ -136,7 +151,7 @@ class Server():
             "message" : user_name + " has joined the chat."
         }
         self.send_message(client, join_msg) # Send the message to all connected clients
-            
+        current_group = 'default'
         while connected:
             try:
                 user_message_string = client.recv(1024).decode(self._format) # Receive 1024 bytes of data
@@ -147,13 +162,70 @@ class Server():
                     if not user_message['message']: # If the message is empty,
                         continue # Skip the rest of the loop
                     
-                    if user_message['message'] == "disconnect": # If the user wants to disconnect,
+                    if user_message['message'] == "!disconnect": # If the user wants to disconnect,
                         with self.lock:
                             connected = False
                             user_message = self.disconnect(client, address, user_message['name'])
                     
-                    # TODO add a way to change group message from client
-                    self.send_message(client, user_message, 'default') # Send the message to all connected clients
+                    if user_message['message'].startswith("!join "):
+                        group_name = user_message['message'][6:]
+                        group_name = group_name.replace(" ", "_")
+                        if group_name not in self.get_all_groups():
+                            self.new_group(group_name)
+                        self.join_group(client, group_name, user_message['name'])
+                        continue
+                    
+                    if user_message['message'].startswith("!get_message"):
+                        # Seperate message by spaces
+                        get_message_pieces = user_message['message'].split(" ")
+                        id = int(get_message_pieces[1])
+                        group = '_'.join(get_message_pieces[2:])
+                        user_message = self.get_message_by_id(id, group)
+                        self.send_message(client, user_message, group, to_caller=True)
+                        continue
+                    
+                    if user_message['message'].startswith("!get_groups"):
+                        user_message = {
+                            "name" : "Server",
+                            "message" : "Groups: " + str(self.get_all_groups())
+                        }
+                        self.send_message(client, user_message, to_caller=True)
+                        continue
+                    
+                    if user_message['message'].startswith("!get_members"):
+                        # Seperate message by spaces
+                        get_message_pieces = user_message['message'].split(" ")
+                        group = '_'.join(get_message_pieces[1:])
+                        user_message = {
+                            "name" : "Server",
+                            "message" : "Members: " + str(self.groups[group].get_all_users())
+                        }
+                        self.send_message(client, user_message, to_caller=True)
+                        continue
+                    
+                    if user_message['message'].startswith("!switch "):
+                        group_name = user_message['message'][8:]
+                        if group_name in self.get_all_groups():
+                            current_group = group_name
+                            self.send_last_two_messages(client, current_group)
+                        continue
+                    
+                    if user_message['message'].startswith("!leave"):
+                        # Seperate message by spaces
+                        get_message_pieces = user_message['message'].split(" ")
+                        group = '_'.join(get_message_pieces[1:])
+                        self.groups[group].leave(user_message['name'])
+                        continue
+                    
+                    if user_message['message'] == "!help":
+                        user_message = {
+                            "name" : "Server",
+                            "message" : "Commands: !disconnect, !join 'group_name', !get_message 'id' 'group_name', !get_groups, !get_members 'group_name', !switch 'group_name', !leave 'group_name', !help"
+                        }
+                        self.send_message(client, user_message, to_caller=True)
+                        continue
+                    
+                    self.send_message(client, user_message, current_group) # Send the message to all connected clients
             except Exception as e:
                 self._logger.error(f"Error handling client: {e}")
         self._logger.info(f"[DISCONNECTION] {address} disconnected.")

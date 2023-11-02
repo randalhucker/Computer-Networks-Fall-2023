@@ -119,7 +119,7 @@ class Client:
                     msg = input("\rEnter message: ")
                     if not msg:
                         continue
-                if msg.lower() == "disconnect":
+                if msg.lower() == "!disconnect":
                     with self.lock:
                         self.connected = False
                 self.send(msg)

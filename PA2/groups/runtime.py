@@ -89,3 +89,9 @@ class Group:
         This function will return whether or not a user is in the group.
         """
         return self._log.is_user_in_log(user)
+    
+    def get_message_by_id(self, id: int) -> Dict[str, str]:
+        """
+        This function will return a message by its id.
+        """
+        return self._log.get_message_by_id(id)

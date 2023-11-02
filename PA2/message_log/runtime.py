@@ -11,13 +11,15 @@ class MessageLog():
         self.users: Dict[str, Tuple[socket.socket, str]] = {}
         self.blank_message = {
             "name": "",
-            "message": ""
+            "message": "",
+            "id": ""
         }
     
     def add_message(self, message: Dict[str, str]):
         """
         This function will add a message to the log.
         """
+        message['id'] = len(self.messages) + 1
         self.messages.append(message)
         
     def add_user(self, user, socket_info: Tuple[socket.socket, str]):
@@ -49,6 +51,15 @@ class MessageLog():
         This function will return True if the user is in the log.
         """
         return user in self.users
+
+    def get_message_by_id(self, id: int) -> Dict[str, str]:
+        """
+        This function will return a message by its id.
+        """
+        for message in self.messages:
+            if message['id'] == id:
+                return message
+        return self.blank_message
     
     def get_last_two_messages(self) -> List[Dict[str, str]]:
         """
