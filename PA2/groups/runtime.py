@@ -3,8 +3,12 @@ import socket
 from typing import Tuple, Dict
 
 class Group:
-    def __init__(self, n: str):
+    def __init__(self, n: str, og_n:str):
+        """
+        This function will initialize a group with a name and a message log.
+        """
         self.name = n
+        self.original_name = og_n
         self._log = MessageLog()
         self._num_members = 0
         
@@ -60,9 +64,10 @@ class Group:
         This function will remove a user from the group.
         """
         try:
-            self._num_members -= 1
-            self._remove_member(user)
-            return True
+            if self._remove_member(user):
+                self._num_members -= 1
+                return True
+            return False
         except Exception:
             return False
     
@@ -95,3 +100,9 @@ class Group:
         This function will return a message by its id.
         """
         return self._log.get_message_by_id(id)
+    
+    def get_original_name(self) -> str:
+        """
+        This function will return the original name of the group.
+        """
+        return self.original_name

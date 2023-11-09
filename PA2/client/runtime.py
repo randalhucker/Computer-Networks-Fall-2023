@@ -2,9 +2,11 @@ import socket
 import threading
 import logging
 import json
+import re
 from typing import List, Dict, Tuple
 
 logging.basicConfig(level=logging.INFO)
+
 
 class Client:
     def __init__(self, host, port):
@@ -26,7 +28,16 @@ class Client:
             bool: True if the message was sent successfully, False otherwise.
         """
         try:
-            response_data = {"name": self.name, "message": msg}
+            subject = ""
+            message = msg.strip()
+            
+            match = re.match(r"'(.*?)'(.*)", msg)
+
+            if match:
+                subject = match.group(1).strip()
+                message = match.group(2).strip()
+
+            response_data = {"name": self.name, "message": message, "subject": subject}
             response_string = json.dumps(response_data)
             with self.lock:
                 self.socket.sendall(response_string.encode(encoding=self._format))
@@ -50,8 +61,7 @@ class Client:
             return []
 
     def receive_messages(self) -> None:
-        """Daemon thread that receives messages from the server and prints them to the console. This thread will run until the client disconnects from the server.
-        """
+        """Daemon thread that receives messages from the server and prints them to the console. This thread will run until the client disconnects from the server."""
         while True:
             try:
                 received_msgs = self.recv()
@@ -60,8 +70,14 @@ class Client:
 
                 with self.lock:
                     for message in received_msgs:
-                        if message['message']:
-                            print(f"\r[{message['name']}] {message['message']}\n")
+                        if message["message"]:
+                            print("\r                            ", end="")
+                            if message["subject"] != "":
+                                print(
+                                    f"\r[{message['name']}] {message['subject']}: {message['message']}"
+                                )
+                            else:
+                                print(f"\r[{message['name']}] {message['message']}")
                     if not self.name:
                         print("\rEnter name: ", end="")
                     else:
@@ -80,12 +96,12 @@ class Client:
             List[Dict[str, str]]: A list of dictionaries containing the parsed JSON objects. Name and message are the keys.
         """
         parsed_list = []
-        
+
         if not json_string:
             return parsed_list
 
         json_objects = json_string.split("}{")
-        
+
         if len(json_objects) > 1:
             json_objects[0] = json_objects[0] + "}"
             json_objects[-1] = "{" + json_objects[-1]
@@ -100,6 +116,11 @@ class Client:
         return parsed_list
 
     def start(self):
+        """
+        This function starts the client. It will connect to the server and start a
+        daemon thread to receive messages from the server. It will then prompt the user
+        for a name and send messages to the server until the user enters "!disconnect".
+        """
         try:
             self.socket.connect(self.addr)
             print(f"[CONNECTED] Connected to server on {self.addr[0]}:{self.addr[1]}")

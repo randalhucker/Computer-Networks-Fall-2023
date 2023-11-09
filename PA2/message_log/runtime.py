@@ -1,51 +1,66 @@
 from typing import Dict, Tuple, List
 import socket
+import time
 
-class MessageLog():
+
+class MessageLog:
     """
     This class will handle storing all of the server's information.
     """
-    
+
     def __init__(self):
+        """
+        This function will initialize the MessageLog class.
+        """
         self.messages: List[Dict[str, str]] = []
         self.users: Dict[str, Tuple[socket.socket, str]] = {}
         self.blank_message = {
             "name": "",
             "message": "",
-            "id": ""
+            "id": "",
+            "date": "",
+            "subject": "",
         }
-    
+
     def add_message(self, message: Dict[str, str]):
         """
         This function will add a message to the log.
+
+        Args:
+            message (Dict[str, str]): The message to add to the log.
         """
-        message['id'] = len(self.messages) + 1
+        message["id"] = len(self.messages) + 1
+        message["date"] = time.strftime("%m/%d/%Y")
+        try:
+            message["subject"] = message["subject"].replace("\n", "")
+        except KeyError:
+            message["subject"] = ""
         self.messages.append(message)
-        
+
     def add_user(self, user, socket_info: Tuple[socket.socket, str]):
         """
         This function will add a {User: Addr} to the log.
         """
         self.users[user] = socket_info
-    
+
     def remove_user(self, user):
         """
         This function will remove a user from the log.
         """
         self.users.pop(user)
-        
+
     def get_all_messages(self):
         """
         This function will return all messages in the log in reverse order. (Newest first)
         """
         return list(reversed(self.messages))
-    
+
     def get_all_users(self):
         """
         This function will return all users in the log.
         """
         return self.users
-    
+
     def is_user_in_log(self, user: str) -> bool:
         """
         This function will return True if the user is in the log.
@@ -57,10 +72,10 @@ class MessageLog():
         This function will return a message by its id.
         """
         for message in self.messages:
-            if message['id'] == id:
+            if message["id"] == id:
                 return message
         return self.blank_message
-    
+
     def get_last_two_messages(self) -> List[Dict[str, str]]:
         """
         This function will return the last two messages in the log.
@@ -73,5 +88,3 @@ class MessageLog():
                 return [self.blank_message, all_messages[0]]
             except IndexError:
                 return [self.blank_message, self.blank_message]
-        
-    
