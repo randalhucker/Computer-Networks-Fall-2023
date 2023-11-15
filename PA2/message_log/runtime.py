@@ -20,6 +20,7 @@ class MessageLog:
             "id": "",
             "date": "",
             "subject": "",
+            "group": "",
         }
 
     def add_message(self, message: Dict[str, str]):

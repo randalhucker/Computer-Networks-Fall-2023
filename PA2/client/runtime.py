@@ -30,7 +30,7 @@ class Client:
         try:
             subject = ""
             message = msg.strip()
-            
+
             match = re.match(r"'(.*?)'(.*)", msg)
 
             if match:
@@ -72,12 +72,34 @@ class Client:
                     for message in received_msgs:
                         if message["message"]:
                             print("\r                            ", end="")
-                            if message["subject"] != "":
-                                print(
-                                    f"\r[{message['name']}] {message['subject']}: {message['message']}"
-                                )
+                            if "group" in message:
+                                group_str = f"[{message['group']}]"
                             else:
-                                print(f"\r[{message['name']}] {message['message']}")
+                                group_str = ""
+
+                            if "id" in message:
+                                id_str = f"[{message['id']}]"
+                            else:
+                                id_str = ""
+
+                            if "name" in message:
+                                name_str = f"[{message['name']}]"
+                            else:
+                                name_str = ""
+
+                            if "date" in message:
+                                date_str = f"[{message['date']}]"
+                            else:
+                                date_str = ""
+
+                            subject_str = message.get("subject", "N/A")
+                            if subject_str != "":
+                                subject_str = " *" + subject_str + "*"
+                            message_str = message.get("message", "N/A")
+
+                            print(
+                                f"\r{group_str}{id_str}{name_str}{date_str}{subject_str}: {message_str}"
+                            )
                     if not self.name:
                         print("\rEnter name: ", end="")
                     else:

@@ -70,6 +70,7 @@ class Server:
             "name": user_name,
             "message": user_message,
             "subject": user_subject,
+            "group": group_name,
         }
 
         if not to_caller:
@@ -131,6 +132,12 @@ class Server:
         _, address = self.clients[client]
         with self.lock:
             self.groups[group_name].join(user_name, (client, address))
+        user_message = {
+            "name": "Server",
+            "message": "Members: "
+            + str([str(key) for key in self.groups[group_name].get_all_users().keys()]),
+        }
+        self.send_message(client, user_message, to_caller=True)
         self.send_last_two_messages(client, group_name)
 
     def get_all_groups(self) -> List[str]:
@@ -295,7 +302,9 @@ class Server:
                                 subject_length = len(matches[1]) + 3
                                 subject = matches[1]
 
-                            message = user_message["message"][command_length + subject_length:]
+                            message = user_message["message"][
+                                command_length + subject_length :
+                            ]
 
                             user_message = {
                                 "name": user_message["name"],
