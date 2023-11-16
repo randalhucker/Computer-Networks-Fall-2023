@@ -144,7 +144,31 @@ class Client:
         for a name and send messages to the server until the user enters "!disconnect".
         """
         try:
-            self.socket.connect(self.addr)
+            while True:
+                try:
+                    self.socket.connect(self.addr)
+                    break  # Break out of the loop if connection is successful
+                except ConnectionRefusedError:
+                    print("[ERROR] Connection refused.")
+                    try:
+                        host = input("Enter new host: ")
+                        port = input("Enter new port: ")
+
+                        # Validate host and port
+                        if not host or not port.isdigit():
+                            print("[ERROR] Invalid input. Please provide a valid host and port.")
+                            continue  # Restart the loop for new input
+
+                        self.addr = (host.strip(), int(port))
+                            
+                        # Close the existing socket before reconnecting
+                        self.socket.close()
+                        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+                    except ValueError:
+                        print("[ERROR] Invalid port. Please enter a valid integer port.")
+                        continue  # Restart the loop for new input
+
             print(f"[CONNECTED] Connected to server on {self.addr[0]}:{self.addr[1]}")
 
             receive_thread = threading.Thread(target=self.receive_messages)
