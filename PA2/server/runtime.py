@@ -159,7 +159,7 @@ class Server:
         return [group.get_original_name() for group in self.groups.values()]
 
     def disconnect(
-        self, client: socket.socket, address: str, name: str
+        self, client: socket.socket, name: str
     ) -> dict[str, str]:
         """Disconnects a client from the server.
 
@@ -171,7 +171,7 @@ class Server:
         self.clients.pop(client)
         user_message = {
             "name": "CLIENT DISCONNECTED",
-            "message": "Client at address: " + str(address) + " disconnected.",
+            "message": name + " disconnected.",
         }
         for group in self.groups.values():
             if group.is_user_in_group(name):  # If the user is in the group,
@@ -247,7 +247,7 @@ class Server:
                         with self.lock:
                             connected = False
                             user_message = self.disconnect(
-                                client, address, user_message["name"]
+                                client, user_message["name"]
                             )
 
                     if command == "!join":

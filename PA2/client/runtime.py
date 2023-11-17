@@ -124,9 +124,12 @@ class Client:
 
         json_objects = json_string.split("}{")
 
-        if len(json_objects) > 1:
-            json_objects[0] = json_objects[0] + "}"
-            json_objects[-1] = "{" + json_objects[-1]
+        for i, object in enumerate(json_objects):
+            if object[0] != "{":
+                object = "{" + object
+            if object[-1] != "}":
+                object = object + "}"
+            json_objects[i] = object
 
         for obj in json_objects:
             try:
