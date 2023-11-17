@@ -34,18 +34,36 @@ Messages must be entered in the following format: 'subject' message
 
 To use a command, the user must type a '!' character followed by a command from the list below. Each command is given with a description of the arguments they require and what it their function is.
 
-Note: Pay attention to the description of each command as the naming convention is different than what is outlined in the project description.
+Note: Pay attention to the description of each command as the naming convention of each function is different than what is outlined in the project description.
 
 Commands:                           
-* !get_groups                     (get a list of the groups created)
-* !join 'group_name'              (join a group)
-* !send 'group_name' message      (send a message to a group)
-* !get_members 'group_name'       (return the members of a group)
-* !leave 'group_name'             (leave group)
-* !get_message 'id' 'group_name'  (get message with id from a group)
-* !switch 'group_name'            (switch current message context to a different group)
-* !disconnect                     (disconnect from the server)
-* !help                           (display this help message)
+* !get_groups                     
+    * This command returns a list of the groups created
+    * This command takes no arguments
+* !join 'group_name'              
+    * This command will allow the user to join a group that they specify 
+    * If the group does not already exist, it will create it
+    * The group name must be specified between single quotes as displayed above
+* !send 'group_name' message      
+    * This command allows a client to send a message to a goup of their choice
+    * Once again, The group name must be specified between single quotes as displayed above
+    * The message must follow the format described earlier in this section
+* !get_members 'group_name'       
+    * This command returns a list of users that are in the specified group
+    * The group name must be specified between single quotes as displayed above
+* !leave 'group_name'             
+    * This command will allow the client to leave the group specific
+    * The group name must be specified between single quotes as displayed above
+* !get_message 'id' 'group_name'  
+    * This command will return the message from the given group with the given id 
+    * The group name and id must be specified between single quotes as displayed above
+* !switch 'group_name'            
+    * This command will switch you "current" group
+    * This means that when you send a message without using a command, it will be sent to the group you specify
+    * Everyone's default current group is 'default'
+* !disconnect                     
+    * The command will disconnect you from the server
+* !help                           
+    * This command will output the help string to remind the user of available functionality
 
-Group names may not contain special characters: 
-* use underscores instead
+IMPORTANT: Group names may NOT contain single quotes!
