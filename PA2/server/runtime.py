@@ -73,6 +73,16 @@ class Server:
             "group": group_name,
         }
 
+        try:
+            if message["id"]:
+                json_data["id"] = message["id"]
+            if message["date"]:
+                json_data["date"] = message["date"]
+            if message["subject"]:
+                json_data["subject"] = message["subject"]
+        except KeyError:
+            pass
+
         if not to_caller:
             with self.lock:
                 self.groups[group_name].new_message(

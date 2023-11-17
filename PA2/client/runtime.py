@@ -15,8 +15,8 @@ class Client:
         self._logger = logging.getLogger(__name__)
         self._format = "utf-8"
         self.lock = threading.Lock()
-        self.name = ""
         self.connected = False
+        self.name = input("Enter name: ")
 
     def send(self, msg: str) -> bool:
         """This method sends a message to the server.
@@ -156,18 +156,26 @@ class Client:
 
                         # Validate host and port
                         if not host or not port.isdigit():
-                            print("[ERROR] Invalid input. Please provide a valid host and port.")
+                            print(
+                                "[ERROR] Invalid input. Please provide a valid host and port."
+                            )
                             continue  # Restart the loop for new input
 
                         self.addr = (host.strip(), int(port))
-                            
+
                         # Close the existing socket before reconnecting
                         self.socket.close()
                         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
                     except ValueError:
-                        print("[ERROR] Invalid port. Please enter a valid integer port.")
+                        print(
+                            "[ERROR] Invalid port. Please enter a valid integer port."
+                        )
                         continue  # Restart the loop for new input
+
+            if self.name:
+                msg = "has connected."
+                self.send(msg)
 
             print(f"[CONNECTED] Connected to server on {self.addr[0]}:{self.addr[1]}")
 
