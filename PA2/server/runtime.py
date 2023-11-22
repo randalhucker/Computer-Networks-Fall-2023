@@ -293,7 +293,7 @@ class Server:
                             user_message = {
                                 "name": "Server",
                                 "message": "Members: "
-                                + str(self.groups[group_name].get_all_users()),
+                                + str([member for member in self.groups[group_name].get_all_users().keys()]),
                             }
                             self.send_message(client, user_message, to_caller=True)
                         continue
