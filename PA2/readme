@@ -67,3 +67,10 @@ Commands:
     * This command will output the help string to remind the user of available functionality
 
 IMPORTANT: Group names may NOT contain single quotes!
+
+## Major Challenges
+
+The biggest challenge we encountered in this project was finding a way for a client to be able to receive and send messgaes at the same time. In order to solve this, we came up with the idea to use an additional thread on the client side as a daemon. This daemon thread sits and waits for incoming messages, and when it receives one, executes the steps necessary to display it, and then returns to waiting for more messages. The other client thread is the one that waits for user input and send messages to the server and other clients.
+
+Apart from that, most of the difficulties we encountered were trivial, related to invalid JSON objects or deciding what to display on the client side.
+
