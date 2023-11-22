@@ -21,7 +21,7 @@ Both programs support command line options to specify the IP address and port to
     * -h, --help   show this help message and exit
     * --ip IP      Server IP address
     * --port PORT  Server port number
-The address of the server and port are preset, but if they were to be changed, the client command line options could be used to connect to it. If the client is run without options, its default connection setting is the same as the server's
+The address of the server and port are preset, but if they were to be changed, the client command line options could be used to connect to it. If the client is run without options, its default connection settings are the same as the server's
 
 ## Usabiliy Instructions
 
