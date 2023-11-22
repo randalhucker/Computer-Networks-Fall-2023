@@ -17,6 +17,7 @@ class Client:
         self.lock = threading.Lock()
         self.connected = False
         self.name = input("Enter name: ")
+        self.group: str = "default"
 
     def send(self, msg: str) -> bool:
         """This method sends a message to the server.
@@ -97,13 +98,19 @@ class Client:
                                 subject_str = " *" + subject_str + "*"
                             message_str = message.get("message", "N/A")
 
-                            print(
-                                f"\r{group_str}{id_str}{name_str}{date_str}{subject_str}: {message_str}"
-                            )
+                            if (
+                                name_str == f"[Server]"
+                                and "New Server: " in message_str
+                            ):
+                                self.group = message_str.replace("New Server: ", "")
+                            else:
+                                print(
+                                    f"\r{group_str}{id_str}{name_str}{date_str}{subject_str}: {message_str}"
+                                )
                     if not self.name:
                         print("\rEnter name: ", end="")
                     else:
-                        print("\rEnter message: ", end="")
+                        print(f"\r[{self.group}] Enter message: ", end="")
             except Exception as e:
                 if self.connected:
                     self._logger.error(f"Error receiving message: {e}")
@@ -194,7 +201,7 @@ class Client:
                         self.name = msg
                         msg = "has connected."
                 else:
-                    msg = input("\rEnter message: ")
+                    msg = input(f"\r[{self.group}] Enter message: ")
                     if not msg:
                         continue
                 if msg.lower() == "!disconnect":

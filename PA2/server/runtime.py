@@ -158,9 +158,7 @@ class Server:
         """
         return [group.get_original_name() for group in self.groups.values()]
 
-    def disconnect(
-        self, client: socket.socket, name: str
-    ) -> dict[str, str]:
+    def disconnect(self, client: socket.socket, name: str) -> dict[str, str]:
         """Disconnects a client from the server.
 
         Args:
@@ -246,9 +244,7 @@ class Server:
                     if command == "!disconnect":  # If the user wants to disconnect,
                         with self.lock:
                             connected = False
-                            user_message = self.disconnect(
-                                client, user_message["name"]
-                            )
+                            user_message = self.disconnect(client, user_message["name"])
 
                     if command == "!join":
                         string = user_message.get("message", "")
@@ -293,7 +289,14 @@ class Server:
                             user_message = {
                                 "name": "Server",
                                 "message": "Members: "
-                                + str([member for member in self.groups[group_name].get_all_users().keys()]),
+                                + str(
+                                    [
+                                        member
+                                        for member in self.groups[group_name]
+                                        .get_all_users()
+                                        .keys()
+                                    ]
+                                ),
                             }
                             self.send_message(client, user_message, to_caller=True)
                         continue
@@ -339,7 +342,9 @@ class Server:
                                 user_message["name"] in users
                             ):
                                 current_group = group_name
-                            # add a message indicating user doesn't belong to group or the group doesn't exist
+                            # TODO - add a message indicating user doesn't belong to group or the group doesn't exist
+                        client_msg = {"name": "Server", "message": "New Server: " + current_group}
+                        self.send_message(client, client_msg, to_caller=True)
                         continue
 
                     if command == "!leave":
