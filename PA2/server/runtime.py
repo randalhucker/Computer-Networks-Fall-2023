@@ -35,6 +35,8 @@ class Server:
             group_name (str): The name of the group.
             original_name (str): The original name of the group.
         """
+        if self.groups.get(group_name):
+            return
         self.groups[group_name] = Group(group_name, original_name)
 
     def send_message(
@@ -150,13 +152,21 @@ class Server:
         self.send_message(client, user_message, to_caller=True)
         self.send_last_two_messages(client, group_name)
 
-    def get_all_groups(self) -> List[str]:
-        """Returns a list of all groups.
+    def get_all_original_groups(self) -> List[str]:
+        """Returns a list of all original group names.
 
         Returns:
-            List[str]: A list of all groups.
+            List[str]: A list of all original group names.
         """
         return [group.get_original_name() for group in self.groups.values()]
+
+    def get_all_stored_groups(self) -> List[str]:
+        """Returns a list of all stored group names.
+
+        Returns:
+            List[str]: A list of all stored group names.
+        """
+        return self.groups.keys()
 
     def disconnect(self, client: socket.socket, name: str) -> dict[str, str]:
         """Disconnects a client from the server.
@@ -254,7 +264,7 @@ class Server:
                             group_name = (
                                 match.group(1).replace(" ", "_").replace("'", "")
                             )
-                            if group_name not in self.get_all_groups():
+                            if group_name not in self.get_all_stored_groups():
                                 self.new_group(group_name, match.group(1))
                             self.join_group(client, group_name, user_message["name"])
                         continue
@@ -276,7 +286,7 @@ class Server:
                     if command == "!get_groups":
                         user_message = {
                             "name": "Server",
-                            "message": "Groups: " + str(self.get_all_groups()),
+                            "message": "Groups: " + str(self.get_all_original_groups()),
                         }
                         self.send_message(client, user_message, to_caller=True)
                         continue
@@ -338,13 +348,16 @@ class Server:
                         if match:
                             group_name = match.group(1).replace(" ", "_")
                             users = self.groups[group_name].get_all_users().keys()
-                            if (group_name in self.get_all_groups()) and (
+                            if (group_name in self.get_all_stored_groups()) and (
                                 user_message["name"] in users
                             ):
                                 current_group = group_name
+                                client_msg = {
+                                    "name": "Server",
+                                    "message": "New Server: " + current_group,
+                                }
+                                self.send_message(client, client_msg, to_caller=True)
                             # TODO - add a message indicating user doesn't belong to group or the group doesn't exist
-                        client_msg = {"name": "Server", "message": "New Server: " + current_group}
-                        self.send_message(client, client_msg, to_caller=True)
                         continue
 
                     if command == "!leave":
@@ -352,8 +365,15 @@ class Server:
                         match = re.search(r"'([^']+?)'", string)
                         if match:
                             group_name = match.group(1).replace(" ", "_")
-                            if group_name in self.get_all_groups():
+                            if group_name in self.get_all_stored_groups():
                                 self.groups[group_name].leave(user_message["name"])
+                                if group_name == current_group:
+                                    current_group = "default"
+                                    client_msg = {
+                                        "name": "Server",
+                                        "message": "New Server: " + current_group,
+                                    }
+                                    self.send_message(client, client_msg, to_caller=True)
                         continue
 
                     if command == "!help":

@@ -45,7 +45,7 @@ Commands:
     * If the group does not already exist, it will create it
     * The group name must be specified between single quotes as displayed above
 * !send 'group_name' message      
-    * This command allows a client to send a message to a goup of their choice
+    * This command allows a client to send a message to a group of their choice
     * Once again, The group name must be specified between single quotes as displayed above
     * The message must follow the format described earlier in this section
 * !get_members 'group_name'       
